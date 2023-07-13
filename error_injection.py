@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from shlex import split
 import subprocess, argparse, sys
 from argparse import RawTextHelpFormatter
@@ -15,6 +17,7 @@ def run(cmd):
 def print_command(cmd, print_flag=False):
     if print_flag:
         print(cmd)
+        # run(cmd)
     else:
         run(cmd)
         sleep(0.5)
@@ -78,6 +81,9 @@ def main():
         
         Print the commands used for injecting the error: 
             python3 error_injection.py -C1 <ADDRESS> -v 
+    
+        Thank you for using this script ! 
+            Made with  <3  by Chaitanya
     '''
     class MyParser(argparse.ArgumentParser):
         def error(self, message):
