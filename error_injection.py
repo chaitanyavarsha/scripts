@@ -65,19 +65,19 @@ def main():
     Example usage:
 
         Inject CE error with custom adderss:
-            python3 error_injection.py -C1 <address> 
+            python3 error_injection.py -C1 <ADDRESS> 
         
         Inject with Vendor_Flag activated:
-            python3 error_injection.py -F -C1 <address>
+            python3 error_injection.py -F -C1 <ADDRESS>
 
         Inject UE with custome address:
             python3 error_injection.py -C1 -t UE
 
         Injeciton same error multiple times:
-            python3 error_injection.py -C1 <address> -c <number of times you want to repeat>
+            python3 error_injection.py -C1 <ADDRESS> -c <NUMBER>
         
         Print the commands used for injecting the error: 
-            python3 error_injection.py -C1 <address> -v 
+            python3 error_injection.py -C1 <ADDRESS> -v 
     '''
     class MyParser(argparse.ArgumentParser):
         def error(self, message):
