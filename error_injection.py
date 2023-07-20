@@ -5,63 +5,74 @@ import subprocess, argparse, sys
 from argparse import RawTextHelpFormatter
 from time import sleep
 
-################################## ACTIONS ##########################
-
-def run(cmd):
-    try:
-        runCmd = subprocess.call(cmd, shell=True, stderr=subprocess.DEVNULL)
-        return runCmd.decode('utf-8')
-    except Exception as err:
-        return "Error with command."
-
-def print_command(cmd, print_flag=False):
-    if print_flag:
-        print(cmd)
-        # run(cmd)
-    else:
-        run(cmd)
-        sleep(0.5)
 
 
-################################# SETUP ##############################
+class ErrorToInject:
+    def __init__(self, param1, param2, error_type, vendor_flag):
+        self.param1 = param1 
+        self.param2 = param2
+        self.error_type = error_type
+        self.vendor_flag = vendor_flag
 
-def init(print_flag):
-    print_command("modprobe einj", print_flag)
+### Init_ ###
+    def init(self):
+        return "modprobe einj"
 
-def param1(print_flag, custom_address1):
-    print_command("echo  "+custom_address1+" > /sys/kernel/debug/apei/einj/param1", print_flag)
+    def init_param1(self, param1):
+        param = "echo "+param1+" > /sys/kernel/debug/apei/einj/param1"
+        return param
 
-def param2(print_flag, custom_address2):
-    if not custom_address2:
-        custom_address2="0xfffffffffffff000"
-    print_command("echo  "+custom_address2+" > /sys/kernel/debug/apei/einj/param2", print_flag)
+    def init_param2(self, param2):
+        if not param2:
+            param2="0xfffffffffffff000"
+        param = "echo "+param2+" > /sys/kernel/debug/apei/einj/param2"
+        return param
 
-def vendor_flag_check(print_flag, flag=False):
-    if flag == True:
-        print_command("echo 0x1 > /sys/kernel/debug/apei/einj/vendor_flags", print_flag)
-
-
-def error_type(print_flag, error_name):
-    if not error_name:
-        print_command("echo 0x8 > /sys/kernel/debug/apei/einj/error_type", print_flag)
-    elif error_name == "UE":
-        print_command("echo 0x10 > /sys/kernel/debug/apei/einj/error_type", print_flag)
-    else:
-        print_command("echo 0x8 > /sys/kernel/debug/apei/einj/error_type", print_flag)
-
-############################# Default_ERR_Directory #########################
-# def default_err_inject(error_to_inject):
-#     dict error_mods = {}
+    def init_vendor_flag(self):
+        param = "echo 0x1 > /sys/kernel/debug/apei/einj/vendor_flags"
+        return param
 
 
-############################### INJECT #################################
-def inject(print_flag, custom_address1, custom_address2, error_type_flag, vendor_flag):
-    init(print_flag)
-    param1(print_flag, custom_address1)
-    param2(print_flag, custom_address2)
-    vendor_flag_check(print_flag, vendor_flag)
-    error_type(print_flag, error_type_flag)
-    print_command("echo 1 > /sys/kernel/debug/apei/einj/error_inject", print_flag)
+    def init_error_type(self, error_name):
+        if error_name == "UE":
+            param = "echo 0x10 > /sys/kernel/debug/apei/einj/error_type"
+        else:
+            param = "echo 0x8 > /sys/kernel/debug/apei/einj/error_type"
+        return param
+
+
+
+#### Actions ###
+
+    def run(self, cmd):
+        try:
+            runCmd = subprocess.call(cmd, shell=True, stderr=subprocess.DEVNULL)
+            return runCmd.decode('utf-8')
+        except Exception as err:
+            return "Error with command."
+
+    def inject(self, count):
+        self.run(self.init())
+        self.run(self.init_param1(self.param1))
+        self.run(self.init_param2(self.param2))
+        self.run(self.init_error_type(self.error_type))
+        print("Injecting error(s)")
+        self.verify()
+        if self.vendor_flag:
+            self.run(self.init_vendor_flag())
+        for i in range(count):
+            self.run("echo 1 > /sys/kernel/debug/apei/einj/error_inject")
+
+    def verify(self):
+        print(self.init())
+        print(self.init_param1(self.param1))
+        print(self.init_param2(self.param2))
+        print(self.init_error_type(self.error_type))
+        if self.vendor_flag:
+            print(self.init_vendor_flag())
+        print("echo 1 > /sys/kernel/debug/apei/einj/error_inject")
+    
+
 
 def main():
     end = '''
@@ -126,13 +137,18 @@ def main():
     if not (args['custom1'] or args['default_err']):
         ap.error("No Error specified for injection -D [MOD] -C1 <address> ")
     
+    ### Default Error Injection ###
+
     if args['default_err']:
-        if count:
-            for i in range(count):
-                default_err_inject(args['default_err'])
-    if count:
-        for i in range(count):
-            inject(print_flag, custom_address1, custom_address2, error_type_flag, vendor_flag)
+        default_err_inject(args['default_err'], print_flag, count)
+
+    ### Custom Error Injection ###
+    e = ErrorToInject(custom_address1, custom_address2, error_type_flag, vendor_flag)
+    
+    if print_flag:
+        e.verify()
+    else:
+        e.inject(count)
 
 if __name__ == "__main__":
     main()
